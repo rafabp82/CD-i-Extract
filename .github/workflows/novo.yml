@@ -1,4 +1,4 @@
-name: Build Windows EXE (Cross-compile with Boost)
+name: Build Windows EXE (Cross-compile with Boost and libpng)
 
 on:
   workflow_dispatch:
@@ -21,16 +21,23 @@ jobs:
         wget -q https://archives.boost.io/release/1.84.0/source/boost_1_84_0.tar.gz
         tar -xzf boost_1_84_0.tar.gz
         cd boost_1_84_0
-        
         ./bootstrap.sh --with-toolset=gcc
-        
-        sudo ./b2 toolset=gcc \
-          --prefix=/usr/x86_64-w64-mingw32 \
-          --with-system \
-          --with-filesystem \
-          install
-        
+        sudo ./b2 toolset=gcc --prefix=/usr/x86_64-w64-mingw32 --with-system --with-filesystem install
         ls /usr/x86_64-w64-mingw32/include/boost/format.hpp
+
+    - name: Download and Build libpng for MinGW
+      run: |
+        wget -q https://download.sourceforge.net/libpng/libpng-1.6.43.tar.gz
+        tar -xzf libpng-1.6.43.tar.gz
+        cd libpng-1.6.43
+        ./configure --host=x86_64-w64-mingw32 \
+          --prefix=/usr/x86_64-w64-mingw32 \
+          --disable-shared \
+          --enable-static
+        make -j$(nproc)
+        sudo make install
+        ls /usr/x86_64-w64-mingw32/include/png.h
+        ls /usr/x86_64-w64-mingw32/lib/libpng*.a
 
     - name: Configure CMake for Windows Cross-compilation
       run: |
@@ -44,12 +51,14 @@ jobs:
         set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
         set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
         EOF
-        
         cmake -B build -DCMAKE_TOOLCHAIN_FILE=mingw-toolchain.cmake \
               -DCMAKE_BUILD_TYPE=Release \
               -DBoost_ROOT=/usr/x86_64-w64-mingw32 \
               -DBoost_INCLUDE_DIR=/usr/x86_64-w64-mingw32/include \
-              -DBoost_LIBRARY_DIR=/usr/x86_64-w64-mingw32/lib
+              -DBoost_LIBRARY_DIR=/usr/x86_64-w64-mingw32/lib \
+              -DPNG_ROOT=/usr/x86_64-w64-mingw32 \
+              -DPNG_INCLUDE_DIR=/usr/x86_64-w64-mingw32/include \
+              -DPNG_LIBRARY=/usr/x86_64-w64-mingw32/lib/libpng.a
 
     - name: Build
       run: |
