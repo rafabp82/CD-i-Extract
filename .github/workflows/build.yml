@@ -1,0 +1,36 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch: # Isso permite que você dispare a build manualmente
+
+jobs:
+  build:
+    runs-on: windows-latest # O trabalho será feito em uma máquina Windows do GitHub
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10' # Uma versão estável do Python
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        # Tenta instalar as dependências do projeto, se o arquivo existir
+        if (Test-Path requirements.txt) { pip install -r requirements.txt }
+
+    - name: Build with PyInstaller
+      run: |
+        # Substitua "main.py" pelo nome do arquivo principal do projeto, se for diferente.
+        # A opção --onefile cria um único .exe
+        pyinstaller --onefile --name "CD-i-Extract" main.py
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CD-i-Extract-Windows
+        path: dist/CD-i-Extract.exe # Pega o arquivo gerado na pasta dist
