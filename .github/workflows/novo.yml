@@ -1,4 +1,4 @@
-name: Build Windows EXE (Cross-compile with Boost, libpng, zlib)
+name: Build Windows EXE (Cross-compile Complete)
 
 on:
   workflow_dispatch:
@@ -22,7 +22,12 @@ jobs:
         tar -xzf boost_1_84_0.tar.gz
         cd boost_1_84_0
         ./bootstrap.sh --with-toolset=gcc
-        sudo ./b2 toolset=gcc --prefix=/usr/x86_64-w64-mingw32 --with-system --with-filesystem install
+        sudo ./b2 toolset=gcc \
+          --prefix=/usr/x86_64-w64-mingw32 \
+          --with-system \
+          --with-filesystem \
+          --with-program_options \
+          install
         ls /usr/x86_64-w64-mingw32/include/boost/format.hpp
 
     - name: Download and Build libpng for MinGW
