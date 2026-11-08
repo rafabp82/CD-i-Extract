@@ -18,8 +18,8 @@ jobs:
 
     - name: Download and Build Boost for MinGW
       run: |
-        # Baixa o Boost (versão estável, ajuste se necessário)
-        wget -q https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.gz
+        # URL oficial e estável para download do Boost
+        wget -q https://archives.boost.io/release/1.84.0/source/boost_1_84_0.tar.gz
         tar -xzf boost_1_84_0.tar.gz
         cd boost_1_84_0
         
@@ -27,7 +27,6 @@ jobs:
         ./bootstrap.sh --with-toolset=gcc
         
         # Compila e instala no diretório do MinGW
-        # O --prefix aponta para onde o MinGW espera encontrar bibliotecas
         sudo ./b2 toolset=gcc \
           --prefix=/usr/x86_64-w64-mingw32 \
           --with-format \
