@@ -1,4 +1,4 @@
-name: Build Windows EXE (Cross-compile with Boost and libpng)
+name: Build Windows EXE (Cross-compile with Boost, libpng, zlib)
 
 on:
   workflow_dispatch:
@@ -11,10 +11,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install MinGW-w64 and build tools
+    - name: Install MinGW-w64, zlib, and build tools
       run: |
         sudo apt-get update
-        sudo apt-get install -y mingw-w64 cmake wget
+        sudo apt-get install -y mingw-w64 cmake wget libz-mingw-w64-dev
 
     - name: Download and Build Boost for MinGW
       run: |
