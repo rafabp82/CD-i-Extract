@@ -1,28 +1,44 @@
-name: Build Windows EXE (MinGW)
+name: Build Windows EXE (Cross-compile from Linux)
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest # Usamos Linux, que é o ambiente original do código
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install MinGW via Chocolatey
-      run: choco install mingw -y
+    - name: Install MinGW-w64 (Cross-compiler)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mingw-w64 cmake
 
-    - name: Configure CMake with MinGW
-      run: cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=17
+    - name: Configure CMake for Windows Cross-compilation
+      # Aqui criamos um arquivo de toolchain para o CMake entender que queremos .exe
+      run: |
+        cat > mingw-toolchain.cmake <<EOF
+        set(CMAKE_SYSTEM_NAME Windows)
+        set(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)
+        set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)
+        set(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)
+        set(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32)
+        set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+        set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+        set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+        EOF
+        cmake -B build -DCMAKE_TOOLCHAIN_FILE=mingw-toolchain.cmake -DCMAKE_BUILD_TYPE=Release
 
-    - name: Build with CMake
+    - name: Build
       run: cmake --build build
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: CD-i-Extract-Windows-MinGW
-        # O executável gerado pelo MinGW geralmente fica diretamente na pasta build
-        path: build/*.exe
+        name: CD-i-Extract-Windows
+        # O executável geralmente é gerado na raiz da pasta build ou em subpastas
+        path: |
+          build/*.exe
+          build/src/*.exe
