@@ -28,7 +28,8 @@ jobs:
           --with-filesystem \
           --with-program_options \
           install
-        ls /usr/x86_64-w64-mingw32/include/boost/format.hpp
+        ls /usr/x86_64-w64-mingw32/lib/libboost_filesystem*.a || echo "Boost filesystem lib not found!"
+        ls /usr/x86_64-w64-mingw32/lib/libboost_program_options*.a || echo "Boost program_options lib not found!"
 
     - name: Download and Build libpng for MinGW
       run: |
@@ -56,6 +57,7 @@ jobs:
         set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
         set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
         EOF
+        
         cmake -B build -DCMAKE_TOOLCHAIN_FILE=mingw-toolchain.cmake \
               -DCMAKE_BUILD_TYPE=Release \
               -DBoost_ROOT=/usr/x86_64-w64-mingw32 \
@@ -66,7 +68,7 @@ jobs:
               -DPNG_ROOT=/usr/x86_64-w64-mingw32 \
               -DPNG_INCLUDE_DIR=/usr/x86_64-w64-mingw32/include \
               -DPNG_LIBRARY=/usr/x86_64-w64-mingw32/lib/libpng.a \
-              -DCMAKE_EXE_LINKER_FLAGS="-L/usr/x86_64-w64-mingw32/lib -lboost_filesystem -lboost_program_options -lz"
+              -DCMAKE_EXE_LINKER_FLAGS="-L/usr/x86_64-w64-mingw32/lib -Wl,--start-group -lboost_filesystem -lboost_program_options -lboost_system -lpng -lz -Wl,--end-group"
 
     - name: Build
       run: |
