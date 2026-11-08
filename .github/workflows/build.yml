@@ -15,8 +15,7 @@ jobs:
       run: choco install mingw -y
 
     - name: Configure CMake with MinGW
-      # Especifica o uso do gerador MinGW Makefiles
-      run: cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=17
 
     - name: Build with CMake
       run: cmake --build build
