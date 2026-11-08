@@ -1,27 +1,29 @@
-name: Build Windows EXE (CMake C++)
+name: Build Windows EXE (MinGW)
 
 on:
-  workflow_dispatch: # Permite disparar manualmente
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-latest # Máquina Windows com Visual Studio e MSVC
+    runs-on: windows-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Configure CMake
-      # Cria a pasta 'build', define a arquitetura x64 e o modo Release
-      run: cmake -B build -A x64 -DCMAKE_BUILD_TYPE=Release
+    - name: Install MinGW via Chocolatey
+      run: choco install mingw -y
+
+    - name: Configure CMake with MinGW
+      # Especifica o uso do gerador MinGW Makefiles
+      run: cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
 
     - name: Build with CMake
-      # Compila o projeto usando a configuração Release
-      run: cmake --build build --config Release
+      run: cmake --build build
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: CD-i-Extract-Windows
-        # O CMake no Windows (com Visual Studio) geralmente coloca o .exe na pasta Release
-        path: build/Release/CD-i-Extract.exe
+        name: CD-i-Extract-Windows-MinGW
+        # O executável gerado pelo MinGW geralmente fica diretamente na pasta build
+        path: build/*.exe
