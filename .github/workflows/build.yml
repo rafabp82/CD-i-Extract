@@ -5,19 +5,24 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Usamos Linux, que é o ambiente original do código
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install MinGW-w64 (Cross-compiler)
+    - name: Install MinGW-w64 and Boost for MinGW
       run: |
         sudo apt-get update
         sudo apt-get install -y mingw-w64 cmake
+        # Instala os headers e bibliotecas do Boost para o alvo MinGW-w64
+        sudo apt-get install -y libboost-all-dev:amd64 # Tenta instalar a versão nativa primeiro
+        # O pacote específico para MinGW pode ter outro nome. Vamos tentar o mais comum:
+        sudo apt-get install -y mingw-w64-dev || true
+        # Se o acima falhar, tentamos compilar o Boost do zero (mais demorado, mas garantido)
+        # Vamos usar a abordagem de instalar via apt, que é mais rápida.
 
     - name: Configure CMake for Windows Cross-compilation
-      # Aqui criamos um arquivo de toolchain para o CMake entender que queremos .exe
       run: |
         cat > mingw-toolchain.cmake <<EOF
         set(CMAKE_SYSTEM_NAME Windows)
@@ -29,7 +34,11 @@ jobs:
         set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
         set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
         EOF
-        cmake -B build -DCMAKE_TOOLCHAIN_FILE=mingw-toolchain.cmake -DCMAKE_BUILD_TYPE=Release
+        # Força o CMake a procurar o Boost no diretório do MinGW
+        cmake -B build -DCMAKE_TOOLCHAIN_FILE=mingw-toolchain.cmake \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DBoost_ROOT=/usr/x86_64-w64-mingw32 \
+              -DBoost_INCLUDE_DIR=/usr/x86_64-w64-mingw32/include
 
     - name: Build
       run: cmake --build build
@@ -38,7 +47,6 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: CD-i-Extract-Windows
-        # O executável geralmente é gerado na raiz da pasta build ou em subpastas
         path: |
           build/*.exe
           build/src/*.exe
