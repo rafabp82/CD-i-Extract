@@ -16,25 +16,22 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y mingw-w64 cmake wget
 
-    - name: Download and Build Boost for MinGW
+     - name: Download and Build Boost for MinGW
       run: |
-        # URL oficial e estável para download do Boost
         wget -q https://archives.boost.io/release/1.84.0/source/boost_1_84_0.tar.gz
         tar -xzf boost_1_84_0.tar.gz
         cd boost_1_84_0
         
-        # Configura o Boost para usar o compilador MinGW
         ./bootstrap.sh --with-toolset=gcc
         
-        # Compila e instala no diretório do MinGW
+        # Remove --with-format. Os headers são instalados de qualquer forma.
         sudo ./b2 toolset=gcc \
           --prefix=/usr/x86_64-w64-mingw32 \
-          --with-format \
           --with-system \
           --with-filesystem \
           install
         
-        # Verifica se os headers foram instalados
+        # Verifica se o header problemático foi instalado
         ls /usr/x86_64-w64-mingw32/include/boost/format.hpp
 
     - name: Configure CMake for Windows Cross-compilation
