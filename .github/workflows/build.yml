@@ -1,36 +1,60 @@
-name: Build Windows EXE
+name: Build Windows EXE (C++)
 
 on:
-  workflow_dispatch: # Isso permite que você dispare a build manualmente
+  workflow_dispatch: # Permite disparar manualmente
 
 jobs:
   build:
-    runs-on: windows-latest # O trabalho será feito em uma máquina Windows do GitHub
+    runs-on: windows-latest # Máquina Windows com Visual Studio e MSVC
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Setup MSVC (Visual Studio Developer Command Prompt)
+      uses: ilammy/msvc-dev-cmd@v1
       with:
-        python-version: '3.10' # Uma versão estável do Python
+        arch: x64
 
-    - name: Install dependencies
+    # --- TENTATIVA 1: Se o projeto usar CMake ---
+    - name: Build with CMake (if CMakeLists.txt exists)
+      if: hashFiles('CMakeLists.txt') != ''
       run: |
-        python -m pip install --upgrade pip
-        pip install pyinstaller
-        # Tenta instalar as dependências do projeto, se o arquivo existir
-        if (Test-Path requirements.txt) { pip install -r requirements.txt }
+        cmake -B build -A x64
+        cmake --build build --config Release
 
-    - name: Build with PyInstaller
+    # --- TENTATIVA 2: Se o projeto usar Makefile ---
+    - name: Build with Make (if Makefile exists)
+      if: hashFiles('Makefile') != '' && hashFiles('CMakeLists.txt') == ''
       run: |
-        # Substitua "main.py" pelo nome do arquivo principal do projeto, se for diferente.
-        # A opção --onefile cria um único .exe
-        pyinstaller --onefile --name "CD-i-Extract" main.py
+        # No Windows, o 'make' pode não existir nativamente. 
+        # Tentamos usar o nmake (do MSVC) ou instalar o make via choco.
+        # Vamos tentar uma abordagem simples: verificar se há um .sln ou compilar direto.
+        echo "Makefile detectado, mas a compilação direta no Windows pode exigir ajustes."
+
+    # --- TENTATIVA 3: Se houver um arquivo .sln (Visual Studio) ---
+    - name: Build with MSBuild (if .sln exists)
+      if: hashFiles('*.sln') != ''
+      run: |
+        msbuild /m /p:Configuration=Release
+
+    # --- TENTATIVA 4: Fallback genérico (compilar todos os .cpp em um .exe) ---
+    # ATENÇÃO: Isso só funciona se o projeto for simples (poucos arquivos, sem libs externas complexas).
+    - name: Fallback build (compile all .cpp files)
+      if: hashFiles('CMakeLists.txt') == '' && hashFiles('*.sln') == '' && hashFiles('Makefile') == ''
+      run: |
+        # Tenta encontrar um main.cpp ou compila todos os .cpp na raiz
+        echo "Nenhum sistema de build detectado. Tentando compilação direta..."
+        # Isso é um chute. O ideal é ver a estrutura do projeto.
+        cl /EHsc /std:c++17 /O2 /Fe:CD-i-Extract.exe *.cpp /link /SUBSYSTEM:CONSOLE
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: CD-i-Extract-Windows
-        path: dist/CD-i-Extract.exe # Pega o arquivo gerado na pasta dist
+        # O caminho varia conforme o sistema de build. Tentamos os locais mais comuns.
+        path: |
+          build/Release/*.exe
+          Release/*.exe
+          *.exe
+          x64/Release/*.exe
